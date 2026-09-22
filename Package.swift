@@ -3,16 +3,18 @@ import PackageDescription
 
 // 验证阶段（方案 A）：只声明源码真正 import 的模块。
 // podspec 里还写了 TUICore / TXLiteAVSDK_Professional / RTCRoomEngine，
-// 但 atomic_x/Sources 一个都没 import——那些是为了 CocoaPods 链接才声明的，
+// 但 atomic_x/Sources 一个都没 import——那些是 CocoaPods 为了链接才声明的，
 // SPM 不需要。
 //
 // AtomicXCore 会带出 RTCRoomEngine → TXIMSDK_Plus_SwiftPM / TRTC_Professional_SwiftPM。
-// 这里显式声明 TXIMSDK_Plus_SwiftPM 是因为源码有一处 `import ImSDK_Plus`，
-// 而 SPM 不允许 import 传递依赖。它和 RTCRoomEngine 用的是同一个包，
-// 版本约束一致，SPM 会解析成单实例，不会链进两份 IM SDK。
+// 这里显式声明 TXIMSDK_Plus_SwiftPM，是因为源码有一处 `import ImSDK_Plus`，
+// 而 SPM 不允许 import 传递依赖。它和 RTCRoomEngine 用的是同一个包、同一版本
+// 约束，SPM 解析成单实例，不会链进两份 IM SDK。
 //
-// 正式改造（方案 B）时要换成 Tencent-RTC 官方的 Chat_SDK_SwiftPM /
-// Professional_SwiftPM / TUICore_SwiftPM，并同步重建我们那四个壳仓库的依赖。
+// 正式改造（方案 B）时换成 Tencent-RTC 官方的 Chat_SDK_SwiftPM /
+// Professional_SwiftPM / TUICore_SwiftPM，并同步重建我们那四个壳仓库。
+//
+// 注意 SnapKit 固定在 5.7.1：6.0 要求 iOS14，与 podspec 声明的 13.0 不符。
 let package = Package(
     name: "AtomicX",
     platforms: [.iOS(.v13)],
@@ -41,10 +43,9 @@ let package = Package(
             exclude: ["AlbumPicker"],
             resources: [.process("Resources")]
         ),
-    ]
-
+    ],
     // 源码与 CocoaPods 共用，还没适配 Swift6 严格并发（ThemeStore.shared
     // 等处会报错）。保持 tools-version 6.0 以便依赖 6.x 的包，但用 Swift5
-    // 语言模式编译。注意：6.0 起参数名为 swiftLanguageModes，且必须放在 targets 之后。
-    swiftLanguageModes: [.v5],
+    // 语言模式编译。6.0 起参数名为 swiftLanguageModes，且必须在 targets 之后。
+    swiftLanguageModes: [.v5]
 )
