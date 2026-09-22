@@ -5,6 +5,8 @@
 //  Created by vincepzhang on 2025/2/21.
 //
 
+import UIKit
+
 extension UIWindow {
     /// Automatically associates with an active WindowScene and makes the window key and visible (iOS 13+ adaptation)
     ///
