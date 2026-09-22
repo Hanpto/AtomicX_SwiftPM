@@ -1,11 +1,18 @@
 // swift-tools-version:6.0
 import PackageDescription
 
-// 依赖版本取各仓库当前最新 tag（2026-09-22 查得）。
-// Tencent-RTC 三个仓库的 product 名和包名不一致，别按包名猜：
-//   TUICore_SwiftPM        → product "TUICore"
-//   Professional_SwiftPM   → product "TXLiteAVSDK_Professional"
-//   Chat_SDK_SwiftPM       → product "Chat_SDK_SwiftPM"
+// 验证阶段（方案 A）：只声明源码真正 import 的模块。
+// podspec 里还写了 TUICore / TXLiteAVSDK_Professional / RTCRoomEngine，
+// 但 atomic_x/Sources 一个都没 import——那些是为了 CocoaPods 链接才声明的，
+// SPM 不需要。
+//
+// AtomicXCore 会带出 RTCRoomEngine → TXIMSDK_Plus_SwiftPM / TRTC_Professional_SwiftPM。
+// 这里显式声明 TXIMSDK_Plus_SwiftPM 是因为源码有一处 `import ImSDK_Plus`，
+// 而 SPM 不允许 import 传递依赖。它和 RTCRoomEngine 用的是同一个包，
+// 版本约束一致，SPM 会解析成单实例，不会链进两份 IM SDK。
+//
+// 正式改造（方案 B）时要换成 Tencent-RTC 官方的 Chat_SDK_SwiftPM /
+// Professional_SwiftPM / TUICore_SwiftPM，并同步重建我们那四个壳仓库的依赖。
 let package = Package(
     name: "AtomicX",
     platforms: [.iOS(.v13)],
@@ -15,14 +22,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Hanpto/AtomicXCore_SwiftPM.git",
                  from: "4.3.8"),
-        .package(url: "https://github.com/Hanpto/RTCRoomEngine_SwiftPM.git",
-                 from: "4.3.5"),
-        .package(url: "https://github.com/Tencent-RTC/TUICore_SwiftPM.git",
-                 from: "8.6.7020"),
-        .package(url: "https://github.com/Tencent-RTC/Professional_SwiftPM.git",
-                 from: "13.3.20845"),
-        .package(url: "https://github.com/Tencent-RTC/Chat_SDK_SwiftPM.git",
-                 from: "9.0.7652"),
+        .package(url: "https://github.com/Hanpto/TXIMSDK_Plus_SwiftPM.git",
+                 from: "9.0.7667"),
         .package(url: "https://github.com/SnapKit/SnapKit.git", from: "6.0.0"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.12.0"),
     ],
@@ -31,16 +32,12 @@ let package = Package(
             name: "AtomicX",
             dependencies: [
                 .product(name: "AtomicXCore", package: "AtomicXCore_SwiftPM"),
-                .product(name: "RTCRoomEngine", package: "RTCRoomEngine_SwiftPM"),
-                .product(name: "TUICore", package: "TUICore_SwiftPM"),
-                .product(name: "TXLiteAVSDK_Professional",
-                         package: "Professional_SwiftPM"),
-                .product(name: "Chat_SDK_SwiftPM", package: "Chat_SDK_SwiftPM"),
+                .product(name: "TXIMSDK_Plus", package: "TXIMSDK_Plus_SwiftPM"),
                 .product(name: "SnapKit", package: "SnapKit"),
                 .product(name: "Kingfisher", package: "Kingfisher"),
             ],
             path: "Sources",
-            // 和 podspec 的 exclude_files 保持一致
+            // 与 podspec 的 exclude_files 保持一致
             exclude: ["AlbumPicker"],
             resources: [.process("Resources")]
         ),
