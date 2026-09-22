@@ -18,8 +18,8 @@ let package = Package(
     platforms: [.iOS(.v13)],
     // 源码与 CocoaPods 共用，还没适配 Swift6 严格并发（ThemeStore.shared
     // 等处会报错）。这里保持 tools-version 6.0 以便依赖 6.x 的包，
-    // 但用 Swift5 语言模式编译。正式改造时再逐个修并发。
-    swiftLanguageVersions: [.v5],
+    // 但用 Swift5 语言模式编译（6.0 起参数改名为 swiftLanguageModes）。正式改造时再逐个修并发。
+    swiftLanguageModes: [.v5],
     products: [
         .library(name: "AtomicX", targets: ["AtomicX"]),
     ],
