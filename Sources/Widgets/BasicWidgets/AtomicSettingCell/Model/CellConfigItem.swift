@@ -7,6 +7,8 @@
 
 import Foundation
 import Combine
+import UIKit
+
 
 public enum CellType {
     case switcher(String)
