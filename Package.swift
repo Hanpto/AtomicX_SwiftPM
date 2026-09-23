@@ -27,7 +27,7 @@ let package = Package(
         .package(url: "https://github.com/Hanpto/TXIMSDK_Plus_SwiftPM.git",
                  from: "9.0.7667"),
         .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
-        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.12.0"),
+        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "7.12.0"),
     ],
     targets: [
         .target(
