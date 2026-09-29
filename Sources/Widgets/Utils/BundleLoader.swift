@@ -20,13 +20,6 @@ public class BundleLoader {
     public static func moduleBundle(named bundleName: String,
                                     moduleName: String,
                                     for aClass: AnyClass) -> Bundle? {
-#if SWIFT_PACKAGE
-        // SPM 的资源在 Bundle.module，没有 .bundle 文件，
-        // 下面三条 CocoaPods 路径全 miss 会返回 nil —— 图片不显示、
-        // 多语言返回 key 原文，且不报错。所以 SPM 下直接走 Bundle.module。
-        // SPM 只有一个资源 bundle，bundleName / moduleName / aClass 三个入参不再生效。
-        return Bundle.module
-#else
         if let url = Bundle(for: aClass).url(forResource: bundleName, withExtension: "bundle") {
             return Bundle(url: url)
         }
@@ -45,7 +38,6 @@ public class BundleLoader {
         }
         
         return nil
-#endif
     }
     
     
