@@ -20,12 +20,13 @@ public class BundleLoader {
     public static func moduleBundle(named bundleName: String,
                                     moduleName: String,
                                     for aClass: AnyClass) -> Bundle? {
-        #if SWIFT_PACKAGE
-        // SPM 把资源直接打进 Bundle.module，不存在独立的 .bundle 文件。
-        // 下面三条都是 CocoaPods 的资源包路径，SPM 下一律找不到；若不加这
-        // 个分支会返回 nil，图片和多语言文案静默失效（不报错，只是不显示）。
+#if SWIFT_PACKAGE
+        // SPM 的资源在 Bundle.module，没有 .bundle 文件，
+        // 下面三条 CocoaPods 路径全 miss 会返回 nil —— 图片不显示、
+        // 多语言返回 key 原文，且不报错。所以 SPM 下直接走 Bundle.module。
+        // SPM 只有一个资源 bundle，bundleName / moduleName / aClass 三个入参不再生效。
         return Bundle.module
-        #else
+#else
         if let url = Bundle(for: aClass).url(forResource: bundleName, withExtension: "bundle") {
             return Bundle(url: url)
         }
@@ -40,16 +41,18 @@ public class BundleLoader {
         if let frameworkURL = url,
            let bundle = Bundle(url: frameworkURL),
            let resourceURL = bundle.url(forResource: bundleName, withExtension: "bundle") {
-           return Bundle(url: resourceURL)
-           }
+            return Bundle(url: resourceURL)
+        }
         
-           return nil
-           #endif
-           }
+        return nil
+#endif
+    }
     
     
     private static let placeholders = ["xxx", "yyy", "zzz", "mmm", "nnn"]
-    /// 统一的国际化核心方法
+    /// 字段未覆盖时，走内置兜底
+    private static let notFoundValue = "com.atomicx.localized.key.notfound"
+    /// 统一的国际化核心方法，支持主 bundle 同名表覆盖文案
         /// - Parameters:
         ///   - key: Localizable.strings 中的 Key
         ///   - bundle: 所在模块的 Bundle
@@ -61,24 +64,39 @@ public class BundleLoader {
                                        in bundle: Bundle,
                                        tableName: String,
                                        arguments: [CVarArg] = []) -> String {
-        var localizedString = ""
-        
-        if let path = bundle.path(forResource: getPreferredLanguage(), ofType: "lproj"),
-           let langBundle = Bundle(path: path) {
-            localizedString = langBundle.localizedString(forKey: key, value: nil, table: tableName)
-        } else {
-            localizedString = bundle.localizedString(forKey: key, value: nil, table: tableName)
-        }
-        
+        let localizedString = mainBundleOverride(key: key, tableName: tableName)
+            ?? sdkBundleLocalized(key: key, in: bundle, tableName: tableName)
+
         if arguments.isEmpty {
             return localizedString
         }
-        
+
         if localizedString.contains("xxx") {
             return applyReplacement(origin: localizedString, args: arguments)
         } else {
             return String(format: localizedString, arguments: arguments)
         }
+    }
+
+    private static func mainBundleOverride(key: String, tableName: String) -> String? {
+        let mainBundle = Bundle.main
+        if let path = mainBundle.path(forResource: getPreferredLanguage(), ofType: "lproj"),
+           let langBundle = Bundle(path: path) {
+            let value = langBundle.localizedString(forKey: key, value: notFoundValue, table: tableName)
+            if value != notFoundValue && !value.isEmpty {
+                return value
+            }
+        }
+        let value = mainBundle.localizedString(forKey: key, value: notFoundValue, table: tableName)
+        return (value != notFoundValue && !value.isEmpty) ? value : nil
+    }
+
+    private static func sdkBundleLocalized(key: String, in bundle: Bundle, tableName: String) -> String {
+        if let path = bundle.path(forResource: getPreferredLanguage(), ofType: "lproj"),
+           let langBundle = Bundle(path: path) {
+            return langBundle.localizedString(forKey: key, value: nil, table: tableName)
+        }
+        return bundle.localizedString(forKey: key, value: nil, table: tableName)
     }
     
     private static func applyReplacement(origin: String, args: [CVarArg]) -> String {
