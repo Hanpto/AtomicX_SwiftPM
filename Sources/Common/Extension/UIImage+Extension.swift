@@ -5,6 +5,8 @@
 //  Created by ssc on 2025/8/29.
 //
 
+import UIKit
+
 public extension UIImage {
     static func atomicXBundleImage(named: String) -> UIImage? {
         return UIImage(named: named, in: atomicXBundle, compatibleWith: nil) ?? UIImage(named: named)
